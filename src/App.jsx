@@ -10,7 +10,7 @@ import EventQrCode from "./pages/EventQrCode.jsx";
 import Frames from "./pages/Frames.jsx";
 import FrameForm from "./pages/FrameForm.jsx";
 import FrameAreaConfig from "./pages/FrameAreaConfig.jsx";
-import Gallery from "./pages/Gallery.jsx";
+import EventStats from "./pages/EventStats.jsx";
 import PublicEvent from "./pages/PublicEvent.jsx";
 
 export default function App() {
@@ -25,7 +25,7 @@ export default function App() {
         <Route path="/eventos/novo" element={<ProtectedRoute><EventForm /></ProtectedRoute>} />
         <Route path="/eventos/:eventId" element={<ProtectedRoute><EventForm /></ProtectedRoute>} />
         <Route path="/eventos/:eventId/qrcode" element={<ProtectedRoute><EventQrCode /></ProtectedRoute>} />
-        <Route path="/eventos/:eventId/galeria" element={<ProtectedRoute><Gallery /></ProtectedRoute>} />
+        <Route path="/eventos/:eventId/estatisticas" element={<ProtectedRoute><EventStats /></ProtectedRoute>} />
 
         <Route path="/eventos/:eventId/molduras" element={<ProtectedRoute><Frames /></ProtectedRoute>} />
         <Route path="/eventos/:eventId/molduras/nova" element={<ProtectedRoute><FrameForm /></ProtectedRoute>} />

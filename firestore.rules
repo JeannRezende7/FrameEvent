@@ -14,11 +14,6 @@ service cloud.firestore {
         allow read: if true;
         allow write: if true;
       }
-
-      match /photos/{photoId} {
-        allow read: if true;
-        allow write: if true;
-      }
     }
   }
 }

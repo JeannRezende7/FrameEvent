@@ -17,12 +17,17 @@ React + Vite + Tailwind + Firebase (Firestore).
   rotação) com prévia ao vivo. Você ajusta uma única vez por moldura e todas
   as fotos geradas usam essa posição — o resultado final é o mesmo do
   briefing, só a forma de ajustar é mais simples de implementar e manter.
-- **Sem Firebase Storage**: imagens (banner, logo, molduras, fotos geradas)
-  são comprimidas no navegador e salvas como base64 direto nos documentos do
-  Firestore, em vez de subidas para o Storage. Isso evita depender do plano
-  pago (Blaze), que o Google passou a exigir para ativar Storage em projetos
-  novos. Limite prático: cada imagem precisa caber em ~700 KB depois de
-  comprimida (o código reduz qualidade/resolução automaticamente até caber).
+- **Sem Firebase Storage**: imagens (banner, logo, molduras) são comprimidas
+  no navegador e salvas como base64 direto nos documentos do Firestore, em
+  vez de subidas para o Storage. Isso evita depender do plano pago (Blaze),
+  que o Google passou a exigir para ativar Storage em projetos novos. Limite
+  prático: cada imagem precisa caber em ~950 KB depois de comprimida (o
+  código reduz qualidade/resolução automaticamente até caber).
+- **Fotos dos convidados não ficam guardadas**: a foto gerada na hora existe
+  só no navegador do convidado (pra baixar/compartilhar) e nunca é enviada
+  ao banco de dados — evita estourar a cota do Firestore e problemas de
+  privacidade. O painel só guarda dois contadores por evento (fotos tiradas
+  e compartilhadas), na aba "Estatísticas".
 
 ## Setup
 
@@ -54,7 +59,8 @@ npm run dev
 4. Ir em "QR Code" do evento, baixar ou imprimir.
 5. No local do evento, os convidados escaneiam o QR Code, tiram ou escolhem
    uma foto, escolhem a moldura e baixam/compartilham o resultado.
-6. Todas as fotos geradas aparecem na "Galeria" do evento no painel.
+6. O total de fotos tiradas e compartilhadas fica em "Estatísticas" do
+   evento no painel — as fotos em si não ficam guardadas.
 
 ## Build para produção
 

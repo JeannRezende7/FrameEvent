@@ -5,6 +5,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  increment,
   orderBy,
   query,
   serverTimestamp,
@@ -53,4 +54,9 @@ export async function updateEvent(eventId, data) {
 
 export async function deleteEvent(eventId) {
   await deleteDoc(doc(db, "events", eventId));
+}
+
+// Não guardamos as fotos geradas — só um contador de uso por evento.
+export async function incrementEventStat(eventId, field) {
+  await updateDoc(doc(db, "events", eventId), { [field]: increment(1) });
 }

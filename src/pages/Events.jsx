@@ -70,7 +70,7 @@ export default function Events() {
                   <CardAction to={`/eventos/${ev.id}`} icon="✏️" label="Editar" />
                   <CardAction to={`/eventos/${ev.id}/molduras`} icon="🖼️" label="Molduras" />
                   <CardAction to={`/eventos/${ev.id}/qrcode`} icon="📱" label="QR Code" />
-                  <CardAction to={`/eventos/${ev.id}/galeria`} icon="📷" label="Galeria" />
+                  <CardAction to={`/eventos/${ev.id}/estatisticas`} icon="📊" label="Estatísticas" />
                 </div>
                 <button
                   onClick={() => handleDelete(ev.id)}

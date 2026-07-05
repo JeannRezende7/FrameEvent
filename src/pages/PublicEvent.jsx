@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { getEventByCode } from "../lib/eventsRepo.js";
+import { getEventByCode, incrementEventStat } from "../lib/eventsRepo.js";
 import { listFrames } from "../lib/framesRepo.js";
-import { createPhoto } from "../lib/photosRepo.js";
-import { uploadDataUrl } from "../lib/uploadImage.js";
 import { composePhoto } from "../utils/composePhoto.js";
 
 const STEP = { START: "start", CAMERA: "camera", FRAME: "frame", DONE: "done" };
@@ -30,6 +28,7 @@ export default function PublicEvent() {
   const cameraInputRef = useRef(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const takenRef = useRef(false);
 
   useEffect(() => {
     async function load() {
@@ -182,6 +181,7 @@ export default function PublicEvent() {
   }
 
   async function composeWithFrame(photoSrc, frame) {
+    takenRef.current = false;
     setSelectedFrame(frame);
     setComposing(true);
     try {
@@ -196,17 +196,22 @@ export default function PublicEvent() {
     await composeWithFrame(sourcePhoto, frame);
   }
 
-  async function persistPhoto() {
-    if (!composedImage || !selectedFrame) return null;
-    const url = await uploadDataUrl(composedImage);
-    await createPhoto(event.id, { imageUrl: url, frameId: selectedFrame.id });
-    return url;
+  // Não guardamos a foto em nenhum lugar — ela é só do convidado, na hora.
+  // Só contamos o uso pra estatística do evento.
+  async function recordTaken() {
+    if (takenRef.current) return;
+    takenRef.current = true;
+    try {
+      await incrementEventStat(event.id, "photosTaken");
+    } catch {
+      // estatística é best-effort: não deve travar o download/compartilhamento
+    }
   }
 
   async function handleDownload() {
     setSaving(true);
     try {
-      await persistPhoto();
+      await recordTaken();
       const link = document.createElement("a");
       link.download = `foto-${event.name}.png`;
       link.href = composedImage;
@@ -220,7 +225,7 @@ export default function PublicEvent() {
   async function handleShare() {
     setSaving(true);
     try {
-      await persistPhoto();
+      await recordTaken();
       const res = await fetch(composedImage);
       const blob = await res.blob();
       const file = new File([blob], "foto.png", { type: "image/png" });
@@ -231,6 +236,11 @@ export default function PublicEvent() {
         link.download = "foto.png";
         link.href = composedImage;
         link.click();
+      }
+      try {
+        await incrementEventStat(event.id, "photosShared");
+      } catch {
+        // idem: não bloqueia o compartilhamento
       }
       setStep(STEP.DONE);
     } finally {

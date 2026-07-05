@@ -78,8 +78,3 @@ async function compress(blob, { transparent = false, maxDimension = 2000 } = {})
 export async function uploadImage(file, { transparent = false } = {}) {
   return compress(file, { transparent });
 }
-
-export async function uploadDataUrl(dataUrl, { transparent = false } = {}) {
-  const blob = await (await fetch(dataUrl)).blob();
-  return compress(blob, { transparent });
-}

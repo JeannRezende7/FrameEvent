@@ -7,6 +7,7 @@ import { getEvent } from "../lib/eventsRepo.js";
 export default function EventQrCode() {
   const { eventId } = useParams();
   const [event, setEvent] = useState(null);
+  const [copied, setCopied] = useState(false);
   const canvasWrapRef = useRef(null);
 
   useEffect(() => {
@@ -31,6 +32,24 @@ export default function EventQrCode() {
     link.click();
   }
 
+  async function handleCopyLink() {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      // navegador sem suporte ao Clipboard API: recorre ao truque do textarea
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
   return (
     <AdminLayout>
       <p className="text-sm text-ink/50 mb-1">
@@ -42,8 +61,16 @@ export default function EventQrCode() {
         <div ref={canvasWrapRef} className="inline-block p-4 bg-white border border-line rounded-lg">
           <QRCodeCanvas value={url} size={220} />
         </div>
-        <p className="text-sm text-ink/60 mt-4 break-all">{url}</p>
-        <p className="text-xs text-ink/40 mt-1">
+        <div className="flex items-center gap-2 mt-4 bg-paper border border-line rounded-lg px-3 py-2.5">
+          <p className="text-sm text-ink/70 truncate flex-1 text-left">{url}</p>
+          <button
+            onClick={handleCopyLink}
+            className="shrink-0 text-sm font-medium text-clay hover:underline"
+          >
+            {copied ? "Copiado! ✓" : "Copiar"}
+          </button>
+        </div>
+        <p className="text-xs text-ink/40 mt-2">
           Os convidados escaneiam esse código com a câmera do celular para tirar fotos.
         </p>
 
