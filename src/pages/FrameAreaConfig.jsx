@@ -74,7 +74,7 @@ export default function FrameAreaConfig() {
         uma única vez e todas as fotos geradas usarão essa posição.
       </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 pb-24 lg:pb-0">
         <div>
           <div
             className="relative w-full bg-[repeating-conic-gradient(#f0ece0_0_25%,#fff_0_50%)] bg-[length:20px_20px] rounded-card overflow-hidden border border-line"
@@ -100,14 +100,14 @@ export default function FrameAreaConfig() {
           </div>
         </div>
 
-        <div className="bg-white border border-line rounded-card p-6 space-y-5">
+        <div className="bg-white border border-line rounded-card p-5 sm:p-6 space-y-5">
           <Slider label="Posição horizontal (X)" value={area.x} onChange={(v) => set("x", v)} max={100 - area.width} />
           <Slider label="Posição vertical (Y)" value={area.y} onChange={(v) => set("y", v)} max={100 - area.height} />
           <Slider label="Largura" value={area.width} onChange={(v) => set("width", v)} min={5} max={100} />
           <Slider label="Altura" value={area.height} onChange={(v) => set("height", v)} min={5} max={100} />
           <Slider label="Rotação" value={area.rotation} onChange={(v) => set("rotation", v)} min={-45} max={45} />
 
-          <div className="flex gap-3 pt-2">
+          <div className="hidden lg:flex gap-3 pt-2">
             <button
               type="button"
               onClick={centralizar}
@@ -125,6 +125,25 @@ export default function FrameAreaConfig() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Barra fixa no rodapé no celular, pra não precisar rolar até o fim */}
+      <div className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-line p-3 flex gap-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+        <button
+          type="button"
+          onClick={centralizar}
+          className="flex-1 border border-line rounded-lg py-3 text-sm font-medium hover:bg-paper"
+        >
+          Centralizar
+        </button>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="flex-1 bg-ink text-paper rounded-lg py-3 text-sm font-medium hover:bg-clay transition-colors disabled:opacity-50"
+        >
+          {saving ? "Salvando..." : "Salvar"}
+        </button>
       </div>
     </AdminLayout>
   );

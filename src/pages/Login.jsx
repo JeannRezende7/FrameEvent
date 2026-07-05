@@ -21,6 +21,9 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-paper px-4">
       <div className="w-full max-w-sm bg-white border border-line rounded-card p-8 shadow-sm">
+        <div className="w-14 h-14 rounded-full bg-clay/10 flex items-center justify-center text-3xl mb-4">
+          🖼️
+        </div>
         <h1 className="font-display text-2xl mb-1 text-ink">Molduras</h1>
         <p className="text-sm text-ink/60 mb-6">Painel administrativo</p>
 
@@ -28,17 +31,18 @@ export default function Login() {
           <div>
             <label className="text-sm text-ink/70 block mb-1">Usuário</label>
             <input
-              className="w-full border border-line rounded-lg px-3 py-2 outline-none focus:border-clay"
+              className="w-full border border-line rounded-lg px-3 py-2.5 outline-none focus:border-clay"
               value={user}
               onChange={(e) => setUser(e.target.value)}
               autoFocus
+              autoCapitalize="none"
             />
           </div>
           <div>
             <label className="text-sm text-ink/70 block mb-1">Senha</label>
             <input
               type="password"
-              className="w-full border border-line rounded-lg px-3 py-2 outline-none focus:border-clay"
+              className="w-full border border-line rounded-lg px-3 py-2.5 outline-none focus:border-clay"
               value={pass}
               onChange={(e) => setPass(e.target.value)}
             />
@@ -48,7 +52,7 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full bg-ink text-paper rounded-lg py-2.5 font-medium hover:bg-clay transition-colors"
+            className="w-full bg-ink text-paper rounded-lg py-3 font-medium hover:bg-clay transition-colors"
           >
             Entrar
           </button>

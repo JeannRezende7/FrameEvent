@@ -38,22 +38,25 @@ export default function EventQrCode() {
       </p>
       <h1 className="font-display text-2xl mb-6">QR Code</h1>
 
-      <div className="max-w-sm bg-white border border-line rounded-card p-8 text-center">
-        <div ref={canvasWrapRef} className="inline-block p-4 bg-white">
+      <div className="max-w-sm bg-white border border-line rounded-card p-6 sm:p-8 text-center">
+        <div ref={canvasWrapRef} className="inline-block p-4 bg-white border border-line rounded-lg">
           <QRCodeCanvas value={url} size={220} />
         </div>
         <p className="text-sm text-ink/60 mt-4 break-all">{url}</p>
+        <p className="text-xs text-ink/40 mt-1">
+          Os convidados escaneiam esse código com a câmera do celular para tirar fotos.
+        </p>
 
         <div className="flex gap-3 mt-6">
           <button
             onClick={handleDownload}
-            className="flex-1 border border-line rounded-lg py-2.5 text-sm font-medium hover:bg-paper"
+            className="flex-1 border border-line rounded-lg py-3 text-sm font-medium hover:bg-paper"
           >
             Baixar PNG
           </button>
           <button
             onClick={() => window.print()}
-            className="flex-1 bg-ink text-paper rounded-lg py-2.5 text-sm font-medium hover:bg-clay transition-colors"
+            className="flex-1 bg-ink text-paper rounded-lg py-3 text-sm font-medium hover:bg-clay transition-colors"
           >
             Imprimir
           </button>

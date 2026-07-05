@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import AdminLayout from "../components/AdminLayout.jsx";
+import ImageUploadField from "../components/ImageUploadField.jsx";
 import { createEvent, getEvent, updateEvent } from "../lib/eventsRepo.js";
 import { uploadImage } from "../lib/uploadImage.js";
+import { useObjectUrl } from "../lib/useObjectUrl.js";
 
 const EMPTY = {
   name: "",
@@ -23,6 +25,9 @@ export default function EventForm() {
   const [logoFile, setLogoFile] = useState(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(isEditing);
+
+  const bannerPreview = useObjectUrl(bannerFile);
+  const logoPreview = useObjectUrl(logoFile);
 
   useEffect(() => {
     if (!isEditing) return;
@@ -74,21 +79,22 @@ export default function EventForm() {
         {isEditing ? "Editar evento" : "Novo evento"}
       </h1>
 
-      <form onSubmit={handleSubmit} className="max-w-lg space-y-5 bg-white border border-line rounded-card p-6">
+      <form onSubmit={handleSubmit} className="max-w-lg space-y-5 bg-white border border-line rounded-card p-5 sm:p-6">
         <div>
           <label className="text-sm text-ink/70 block mb-1">Nome do evento</label>
           <input
             required
-            className="w-full border border-line rounded-lg px-3 py-2 outline-none focus:border-clay"
+            className="w-full border border-line rounded-lg px-3 py-2.5 outline-none focus:border-clay"
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
+            placeholder="Ex: Aniversário da Maria"
           />
         </div>
 
         <div>
           <label className="text-sm text-ink/70 block mb-1">Descrição (opcional)</label>
           <textarea
-            className="w-full border border-line rounded-lg px-3 py-2 outline-none focus:border-clay"
+            className="w-full border border-line rounded-lg px-3 py-2.5 outline-none focus:border-clay"
             rows={3}
             value={form.description}
             onChange={(e) => set("description", e.target.value)}
@@ -100,32 +106,31 @@ export default function EventForm() {
           <input
             type="date"
             required
-            className="w-full border border-line rounded-lg px-3 py-2 outline-none focus:border-clay"
+            className="w-full border border-line rounded-lg px-3 py-2.5 outline-none focus:border-clay"
             value={form.date}
             onChange={(e) => set("date", e.target.value)}
           />
         </div>
 
-        <div>
-          <label className="text-sm text-ink/70 block mb-1">Banner (opcional)</label>
-          {form.bannerUrl && !bannerFile && (
-            <img src={form.bannerUrl} className="h-24 rounded-lg mb-2 object-cover" />
-          )}
-          <input type="file" accept="image/*" onChange={(e) => setBannerFile(e.target.files[0])} />
-        </div>
+        <ImageUploadField
+          label="Banner (opcional)"
+          hint="Aparece no topo da página do evento"
+          previewUrl={bannerPreview || form.bannerUrl}
+          onChange={(e) => setBannerFile(e.target.files[0])}
+        />
 
-        <div>
-          <label className="text-sm text-ink/70 block mb-1">Logo (opcional)</label>
-          {form.logoUrl && !logoFile && (
-            <img src={form.logoUrl} className="h-16 rounded-lg mb-2 object-contain" />
-          )}
-          <input type="file" accept="image/*" onChange={(e) => setLogoFile(e.target.files[0])} />
-        </div>
+        <ImageUploadField
+          label="Logo (opcional)"
+          hint="PNG transparente recomendado"
+          previewUrl={logoPreview || form.logoUrl}
+          onChange={(e) => setLogoFile(e.target.files[0])}
+          transparent
+        />
 
         <div>
           <label className="text-sm text-ink/70 block mb-1">Status</label>
           <select
-            className="w-full border border-line rounded-lg px-3 py-2 outline-none focus:border-clay"
+            className="w-full border border-line rounded-lg px-3 py-2.5 outline-none focus:border-clay"
             value={form.status}
             onChange={(e) => set("status", e.target.value)}
           >
@@ -137,7 +142,7 @@ export default function EventForm() {
         <button
           type="submit"
           disabled={saving}
-          className="w-full bg-ink text-paper rounded-lg py-2.5 font-medium hover:bg-clay transition-colors disabled:opacity-50"
+          className="w-full bg-ink text-paper rounded-lg py-3 font-medium hover:bg-clay transition-colors disabled:opacity-50"
         >
           {saving ? "Salvando..." : "Salvar evento"}
         </button>

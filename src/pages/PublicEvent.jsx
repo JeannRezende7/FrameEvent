@@ -24,6 +24,7 @@ export default function PublicEvent() {
   const [cameraFrame, setCameraFrame] = useState(null);
   const [facing, setFacing] = useState("user");
   const [cameraRatio, setCameraRatio] = useState(3 / 4);
+  const [focusPoint, setFocusPoint] = useState(null);
 
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
@@ -63,6 +64,17 @@ export default function PublicEvent() {
     streamRef.current = null;
   }
 
+  // Sem isso, o navegador pode escolher sozinho um stream de baixa resolução
+  // (às vezes 640x480) mesmo em celulares com câmera boa — "ideal" pede o
+  // máximo disponível sem falhar caso o hardware não alcance esse valor.
+  function videoConstraints(mode) {
+    return {
+      facingMode: mode,
+      width: { ideal: 1920 },
+      height: { ideal: 1920 },
+    };
+  }
+
   async function openCamera() {
     if (!navigator.mediaDevices?.getUserMedia) {
       cameraInputRef.current?.click();
@@ -72,7 +84,7 @@ export default function PublicEvent() {
     setStep(STEP.CAMERA);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: facing },
+        video: videoConstraints(facing),
         audio: false,
       });
       streamRef.current = stream;
@@ -92,7 +104,7 @@ export default function PublicEvent() {
     stopCamera();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: next },
+        video: videoConstraints(next),
         audio: false,
       });
       streamRef.current = stream;
@@ -102,7 +114,7 @@ export default function PublicEvent() {
       // não conseguiu trocar: tenta voltar para a câmera anterior
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: facing },
+          video: videoConstraints(facing),
           audio: false,
         });
         streamRef.current = stream;
@@ -110,6 +122,36 @@ export default function PublicEvent() {
       } catch {
         // sem câmera disponível
       }
+    }
+  }
+
+  function handleFocusTap(e) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width;
+    const relY = (e.clientY - rect.top) / rect.height;
+    setFocusPoint({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    setTimeout(() => setFocusPoint(null), 600);
+
+    // Suporte experimental (principalmente Android/Chrome) para pedir refoco
+    // num ponto específico. iPhone/Safari não expõe controle de foco pra
+    // páginas web — nesses casos só o anel visual aparece, sem efeito real.
+    const track = streamRef.current?.getVideoTracks?.()[0];
+    const capabilities = track?.getCapabilities?.();
+    if (!capabilities) return;
+
+    const advanced = {};
+    if (capabilities.pointsOfInterest) {
+      // câmera frontal é espelhada na tela, mas não no stream real
+      const px = facing === "user" ? 1 - relX : relX;
+      advanced.pointsOfInterest = [{ x: px, y: relY }];
+    }
+    if (capabilities.focusMode?.includes("single-shot")) {
+      advanced.focusMode = "single-shot";
+    } else if (capabilities.focusMode?.includes("continuous")) {
+      advanced.focusMode = "continuous";
+    }
+    if (Object.keys(advanced).length > 0) {
+      track.applyConstraints({ advanced: [advanced] }).catch(() => {});
     }
   }
 
@@ -241,6 +283,7 @@ export default function PublicEvent() {
         {hiddenInputs}
 
         <div
+          onClick={handleFocusTap}
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
           style={{
             aspectRatio: String(cameraRatio),
@@ -283,6 +326,12 @@ export default function PublicEvent() {
               src={cameraFrame.imageUrl}
               onLoad={(e) => setCameraRatio(e.target.naturalWidth / e.target.naturalHeight || 1)}
               className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+            />
+          )}
+          {focusPoint && (
+            <div
+              className="absolute w-16 h-16 border-2 border-white rounded-lg pointer-events-none animate-pulse"
+              style={{ left: focusPoint.x - 32, top: focusPoint.y - 32 }}
             />
           )}
         </div>

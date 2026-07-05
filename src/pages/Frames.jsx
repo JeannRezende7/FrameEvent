@@ -54,7 +54,7 @@ export default function Frames() {
 
   return (
     <AdminLayout>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-2">
         <div>
           <p className="text-sm text-ink/50">
             <Link to="/eventos" className="hover:underline">Eventos</Link> / {event?.name}
@@ -63,53 +63,95 @@ export default function Frames() {
         </div>
         <Link
           to={`/eventos/${eventId}/molduras/nova`}
-          className="bg-ink text-paper rounded-lg px-4 py-2 text-sm font-medium hover:bg-clay transition-colors"
+          className="w-full sm:w-auto text-center bg-ink text-paper rounded-lg px-4 py-3 sm:py-2 text-sm font-medium hover:bg-clay transition-colors"
         >
-          + Nova Moldura
+          + Nova moldura
         </Link>
       </div>
 
-      <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {frames.map((frame, i) => (
-          <div key={frame.id} className="bg-white border border-line rounded-card overflow-hidden">
-            <div className="h-40 bg-[repeating-conic-gradient(#f0ece0_0_25%,#fff_0_50%)] bg-[length:16px_16px] flex items-center justify-center">
-              <img src={frame.imageUrl} alt={frame.name} className="max-h-full max-w-full object-contain" />
-            </div>
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="font-display text-lg">{frame.name}</h2>
-                <span
-                  className={`text-xs px-2 py-0.5 rounded-full ${
-                    frame.active ? "bg-moss/10 text-moss" : "bg-ink/5 text-ink/50"
-                  }`}
-                >
-                  {frame.active ? "Ativa" : "Desativada"}
-                </span>
+      {frames.length === 0 ? (
+        <div className="mt-6 text-center py-16 bg-white border border-dashed border-line rounded-card">
+          <p className="text-4xl mb-3">🖼️</p>
+          <p className="text-ink/60">Nenhuma moldura cadastrada ainda.</p>
+          <Link
+            to={`/eventos/${eventId}/molduras/nova`}
+            className="text-clay font-medium hover:underline mt-2 inline-block"
+          >
+            Cadastrar a primeira moldura
+          </Link>
+        </div>
+      ) : (
+        <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {frames.map((frame, i) => (
+            <div key={frame.id} className="bg-white border border-line rounded-card overflow-hidden">
+              <div className="h-40 bg-[repeating-conic-gradient(#f0ece0_0_25%,#fff_0_50%)] bg-[length:16px_16px] flex items-center justify-center">
+                <img src={frame.imageUrl} alt={frame.name} className="max-h-full max-w-full object-contain" />
               </div>
-              <div className="flex flex-wrap items-center gap-3 text-sm">
-                <Link to={`/eventos/${eventId}/molduras/${frame.id}`} className="text-clay hover:underline">
-                  Editar
-                </Link>
-                <Link to={`/eventos/${eventId}/molduras/${frame.id}/ajustar`} className="text-clay hover:underline">
-                  Ajustar área da foto
-                </Link>
-                <button onClick={() => toggleActive(frame)} className="text-ink/60 hover:underline">
-                  {frame.active ? "Desativar" : "Ativar"}
-                </button>
-                <button onClick={() => move(frame, -1)} disabled={i === 0} className="text-ink/40 disabled:opacity-30">
-                  ↑
-                </button>
-                <button onClick={() => move(frame, 1)} disabled={i === frames.length - 1} className="text-ink/40 disabled:opacity-30">
-                  ↓
-                </button>
-                <button onClick={() => handleDelete(frame.id)} className="text-red-500 hover:underline ml-auto">
-                  Excluir
-                </button>
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-3 gap-2">
+                  <h2 className="font-display text-lg truncate">{frame.name}</h2>
+                  <span
+                    className={`shrink-0 text-xs px-2 py-0.5 rounded-full ${
+                      frame.active ? "bg-moss/10 text-moss" : "bg-ink/5 text-ink/50"
+                    }`}
+                  >
+                    {frame.active ? "Ativa" : "Desativada"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    to={`/eventos/${eventId}/molduras/${frame.id}`}
+                    className="flex items-center justify-center gap-1.5 border border-line rounded-lg py-2.5 text-sm font-medium text-ink/70 hover:bg-paper hover:text-ink transition-colors"
+                  >
+                    ✏️ Editar
+                  </Link>
+                  <Link
+                    to={`/eventos/${eventId}/molduras/${frame.id}/ajustar`}
+                    className="flex items-center justify-center gap-1.5 border border-line rounded-lg py-2.5 text-sm font-medium text-ink/70 hover:bg-paper hover:text-ink transition-colors"
+                  >
+                    🎯 Ajustar área
+                  </Link>
+                </div>
+
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-line">
+                  <button
+                    onClick={() => toggleActive(frame)}
+                    className="text-sm text-ink/60 hover:text-ink px-1 py-1.5"
+                  >
+                    {frame.active ? "Desativar" : "Ativar"}
+                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => move(frame, -1)}
+                      disabled={i === 0}
+                      className="w-8 h-8 flex items-center justify-center rounded-full text-ink/50 hover:bg-paper disabled:opacity-25"
+                      title="Mover para cima"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      onClick={() => move(frame, 1)}
+                      disabled={i === frames.length - 1}
+                      className="w-8 h-8 flex items-center justify-center rounded-full text-ink/50 hover:bg-paper disabled:opacity-25"
+                      title="Mover para baixo"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      onClick={() => handleDelete(frame.id)}
+                      className="w-8 h-8 flex items-center justify-center rounded-full text-red-500 hover:bg-red-50"
+                      title="Excluir"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </AdminLayout>
   );
 }
