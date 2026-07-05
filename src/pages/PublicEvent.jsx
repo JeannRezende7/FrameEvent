@@ -17,6 +17,7 @@ export default function PublicEvent() {
   const [selectedFrame, setSelectedFrame] = useState(null);
   const [composedImage, setComposedImage] = useState(null);
   const [composing, setComposing] = useState(false);
+  const [composeError, setComposeError] = useState("");
   const [saving, setSaving] = useState(false);
 
   const [cameraFrame, setCameraFrame] = useState(null);
@@ -168,25 +169,57 @@ export default function PublicEvent() {
     composeWithFrame(dataUrl, cameraFrame);
   }
 
-  function handleFile(e) {
+  // Fotos escolhidas na galeria vêm na resolução total da câmera do celular
+  // (várias vezes maior que a moldura) — isso pode travar ou demorar demais
+  // ao compor. Reduz antes de qualquer outra coisa.
+  function resizeToDataUrl(file, maxDimension) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale = Math.min(1, maxDimension / Math.max(img.naturalWidth, img.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.naturalWidth * scale);
+        canvas.height = Math.round(img.naturalHeight * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.92));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("Não foi possível abrir essa foto."));
+      };
+      img.src = url;
+    });
+  }
+
+  async function handleFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
     stopCamera();
-    const reader = new FileReader();
-    reader.onload = () => {
-      setSourcePhoto(reader.result);
-      setStep(STEP.FRAME);
-    };
-    reader.readAsDataURL(file);
+    setComposedImage(null);
+    setSelectedFrame(null);
+    setComposeError("");
+    setStep(STEP.FRAME);
+    try {
+      const dataUrl = await resizeToDataUrl(file, 2000);
+      setSourcePhoto(dataUrl);
+    } catch {
+      setComposeError("Não foi possível abrir essa foto. Tente outra.");
+    }
   }
 
   async function composeWithFrame(photoSrc, frame) {
     takenRef.current = false;
     setSelectedFrame(frame);
     setComposing(true);
+    setComposeError("");
     try {
       const result = await composePhoto(photoSrc, frame.imageUrl, frame.photoArea);
       setComposedImage(result);
+    } catch {
+      setComposedImage(null);
+      setComposeError("Não foi possível aplicar essa moldura nessa foto. Tente outra foto ou moldura.");
     } finally {
       setComposing(false);
     }
@@ -252,6 +285,7 @@ export default function PublicEvent() {
     setSourcePhoto(null);
     setSelectedFrame(null);
     setComposedImage(null);
+    setComposeError("");
     if (frames.length > 0) {
       openCamera();
     } else {
@@ -427,15 +461,27 @@ export default function PublicEvent() {
 
       {step === STEP.FRAME && (
         <div className="mt-8 w-full max-w-sm">
+          <div className="flex items-center justify-between mb-3">
+            <button onClick={reset} className="text-sm text-ink/50 hover:text-ink flex items-center gap-1">
+              ✕ Cancelar
+            </button>
+          </div>
+
           <div className="bg-white border border-line rounded-card overflow-hidden aspect-square flex items-center justify-center">
             {composing ? (
               <p className="text-ink/40 text-sm">Aplicando moldura...</p>
             ) : composedImage ? (
               <img src={composedImage} className="w-full h-full object-contain" />
-            ) : (
+            ) : sourcePhoto ? (
               <img src={sourcePhoto} className="w-full h-full object-contain" />
+            ) : (
+              <p className="text-ink/40 text-sm">Carregando foto...</p>
             )}
           </div>
+
+          {composeError && (
+            <p className="text-sm text-red-600 text-center mt-3">{composeError}</p>
+          )}
 
           <p className="text-sm text-ink/60 mt-5 mb-2 text-center">Escolha uma moldura</p>
           <div className="grid grid-cols-3 gap-3">
