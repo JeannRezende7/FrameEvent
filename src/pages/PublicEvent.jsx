@@ -85,18 +85,31 @@ export default function PublicEvent() {
   }
 
   async function switchCamera() {
+    // Muitos celulares (sobretudo iPhone) não conseguem abrir uma segunda
+    // câmera com a primeira ainda ativa — por isso é preciso liberar a atual
+    // antes de pedir a próxima.
     const next = facing === "user" ? "environment" : "user";
+    stopCamera();
     try {
-      const newStream = await navigator.mediaDevices.getUserMedia({
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: next },
         audio: false,
       });
-      stopCamera();
-      streamRef.current = newStream;
+      streamRef.current = stream;
       setFacing(next);
-      if (videoRef.current) videoRef.current.srcObject = newStream;
+      if (videoRef.current) videoRef.current.srcObject = stream;
     } catch {
-      // mantém a câmera atual se a troca falhar
+      // não conseguiu trocar: tenta voltar para a câmera anterior
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: facing },
+          audio: false,
+        });
+        streamRef.current = stream;
+        if (videoRef.current) videoRef.current.srcObject = stream;
+      } catch {
+        // sem câmera disponível
+      }
     }
   }
 
