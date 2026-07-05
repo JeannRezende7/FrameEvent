@@ -548,7 +548,7 @@ export default function PublicEvent() {
         </div>
       )}
 
-      <div className="w-full mt-auto pt-12 pb-2 text-center">
+      <div className="w-full mt-8 pb-2 text-center">
         <p className="text-xs text-ink/40">
           📸 Gostou dessa experiência? Quer uma moldura assim no seu evento?
         </p>
