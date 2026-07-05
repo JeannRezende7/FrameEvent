@@ -6,7 +6,7 @@ import { createPhoto } from "../lib/photosRepo.js";
 import { uploadDataUrl } from "../lib/uploadImage.js";
 import { composePhoto } from "../utils/composePhoto.js";
 
-const STEP = { START: "start", FRAME: "frame", DONE: "done" };
+const STEP = { START: "start", CAMERA: "camera", FRAME: "frame", DONE: "done" };
 
 export default function PublicEvent() {
   const { code } = useParams();
@@ -21,8 +21,14 @@ export default function PublicEvent() {
   const [composing, setComposing] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const cameraInputRef = useRef(null);
+  const [cameraFrame, setCameraFrame] = useState(null);
+  const [facing, setFacing] = useState("user");
+  const [cameraRatio, setCameraRatio] = useState(3 / 4);
+
   const galleryInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   useEffect(() => {
     async function load() {
@@ -39,9 +45,79 @@ export default function PublicEvent() {
     load();
   }, [code]);
 
+  // Abre a câmera automaticamente assim que o evento carrega, já com a
+  // moldura sobreposta — o convidado cai direto no modo "photo booth".
+  useEffect(() => {
+    if (status === "ready" && frames.length > 0) {
+      openCamera();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status]);
+
+  useEffect(() => {
+    return () => stopCamera();
+  }, []);
+
+  function stopCamera() {
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  }
+
+  async function openCamera() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      cameraInputRef.current?.click();
+      return;
+    }
+    setCameraFrame((prev) => prev || frames[0] || null);
+    setStep(STEP.CAMERA);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facing },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) videoRef.current.srcObject = stream;
+    } catch {
+      // câmera indisponível ou permissão negada: cai para o app nativo do celular
+      setStep(STEP.START);
+      cameraInputRef.current?.click();
+    }
+  }
+
+  async function switchCamera() {
+    const next = facing === "user" ? "environment" : "user";
+    try {
+      const newStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: next },
+        audio: false,
+      });
+      stopCamera();
+      streamRef.current = newStream;
+      setFacing(next);
+      if (videoRef.current) videoRef.current.srcObject = newStream;
+    } catch {
+      // mantém a câmera atual se a troca falhar
+    }
+  }
+
+  function capturePhoto() {
+    const video = videoRef.current;
+    if (!video || !cameraFrame) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/png");
+    stopCamera();
+    setSourcePhoto(dataUrl);
+    setStep(STEP.FRAME);
+    composeWithFrame(dataUrl, cameraFrame);
+  }
+
   function handleFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
+    stopCamera();
     const reader = new FileReader();
     reader.onload = () => {
       setSourcePhoto(reader.result);
@@ -50,15 +126,19 @@ export default function PublicEvent() {
     reader.readAsDataURL(file);
   }
 
-  async function selectFrame(frame) {
+  async function composeWithFrame(photoSrc, frame) {
     setSelectedFrame(frame);
     setComposing(true);
     try {
-      const result = await composePhoto(sourcePhoto, frame.imageUrl, frame.photoArea);
+      const result = await composePhoto(photoSrc, frame.imageUrl, frame.photoArea);
       setComposedImage(result);
     } finally {
       setComposing(false);
     }
+  }
+
+  async function selectFrame(frame) {
+    await composeWithFrame(sourcePhoto, frame);
   }
 
   async function persistPhoto() {
@@ -104,10 +184,14 @@ export default function PublicEvent() {
   }
 
   function reset() {
-    setStep(STEP.START);
     setSourcePhoto(null);
     setSelectedFrame(null);
     setComposedImage(null);
+    if (frames.length > 0) {
+      openCamera();
+    } else {
+      setStep(STEP.START);
+    }
   }
 
   if (status === "loading") {
@@ -118,8 +202,8 @@ export default function PublicEvent() {
     return <CenteredMessage>Evento não encontrado.</CenteredMessage>;
   }
 
-  return (
-    <div className="min-h-screen bg-paper flex flex-col items-center px-4 py-8">
+  const hiddenInputs = (
+    <>
       <input
         ref={cameraInputRef}
         type="file"
@@ -135,6 +219,116 @@ export default function PublicEvent() {
         className="hidden"
         onChange={handleFile}
       />
+    </>
+  );
+
+  if (step === STEP.CAMERA) {
+    return (
+      <div className="fixed inset-0 bg-black">
+        {hiddenInputs}
+
+        <div
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+          style={{
+            aspectRatio: String(cameraRatio),
+            width: `min(100vw, calc(100dvh * ${cameraRatio}))`,
+            height: `min(100dvh, calc(100vw / ${cameraRatio}))`,
+          }}
+        >
+          {cameraFrame ? (
+            <div
+              className="absolute overflow-hidden"
+              style={{
+                left: `${cameraFrame.photoArea.x}%`,
+                top: `${cameraFrame.photoArea.y}%`,
+                width: `${cameraFrame.photoArea.width}%`,
+                height: `${cameraFrame.photoArea.height}%`,
+                transform: `rotate(${cameraFrame.photoArea.rotation || 0}deg)`,
+              }}
+            >
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+                style={{ transform: facing === "user" ? "scaleX(-1)" : "none" }}
+              />
+            </div>
+          ) : (
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{ transform: facing === "user" ? "scaleX(-1)" : "none" }}
+            />
+          )}
+          {cameraFrame && (
+            <img
+              src={cameraFrame.imageUrl}
+              onLoad={(e) => setCameraRatio(e.target.naturalWidth / e.target.naturalHeight || 1)}
+              className="absolute inset-0 w-full h-full object-contain pointer-events-none"
+            />
+          )}
+        </div>
+
+        <button
+          onClick={() => setStep(STEP.START)}
+          className="absolute top-5 left-5 w-10 h-10 rounded-full bg-black/50 text-white flex items-center justify-center backdrop-blur"
+        >
+          ✕
+        </button>
+
+        {frames.length > 1 && (
+          <div className="absolute inset-x-0 bottom-28 flex justify-center gap-2 px-4 overflow-x-auto">
+            {frames.map((f) => (
+              <button
+                key={f.id}
+                onClick={() => setCameraFrame(f)}
+                className={`shrink-0 w-12 h-12 rounded-full bg-white/90 border-2 p-1 flex items-center justify-center ${
+                  cameraFrame?.id === f.id ? "border-clay" : "border-transparent"
+                }`}
+              >
+                <img src={f.imageUrl} className="max-h-full max-w-full object-contain" />
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="absolute inset-x-0 bottom-8 flex items-center justify-center gap-8">
+          <button
+            onClick={() => galleryInputRef.current.click()}
+            className="w-14 h-14 rounded-full bg-black/50 text-white text-2xl flex items-center justify-center backdrop-blur"
+            title="Escolher da galeria"
+          >
+            🖼
+          </button>
+          <button
+            onClick={capturePhoto}
+            disabled={!cameraFrame}
+            className="rounded-full bg-white text-ink text-3xl flex items-center justify-center shadow-lg disabled:opacity-50"
+            style={{ width: "4.5rem", height: "4.5rem" }}
+            title="Capturar foto"
+          >
+            📸
+          </button>
+          <button
+            onClick={switchCamera}
+            className="w-14 h-14 rounded-full bg-blue-500/90 text-white text-2xl flex items-center justify-center"
+            title="Trocar câmera"
+          >
+            🔄
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-paper flex flex-col items-center px-4 py-8">
+      {hiddenInputs}
 
       {event.logoUrl && <img src={event.logoUrl} className="h-14 object-contain mb-4" />}
       <h1 className="font-display text-2xl text-center">{event.name}</h1>
@@ -145,7 +339,7 @@ export default function PublicEvent() {
       {step === STEP.START && (
         <div className="mt-10 w-full max-w-xs space-y-3">
           <button
-            onClick={() => cameraInputRef.current.click()}
+            onClick={openCamera}
             className="w-full bg-ink text-paper rounded-lg py-3.5 font-medium hover:bg-clay transition-colors"
           >
             📷 Tirar foto

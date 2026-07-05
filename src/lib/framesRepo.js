@@ -8,7 +8,6 @@ import {
   query,
   serverTimestamp,
   updateDoc,
-  where,
 } from "firebase/firestore";
 import { db } from "./firebase.js";
 
@@ -17,11 +16,9 @@ function framesCol(eventId) {
 }
 
 export async function listFrames(eventId, { onlyActive = false } = {}) {
-  const q = onlyActive
-    ? query(framesCol(eventId), where("active", "==", true), orderBy("order", "asc"))
-    : query(framesCol(eventId), orderBy("order", "asc"));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  const snap = await getDocs(query(framesCol(eventId), orderBy("order", "asc")));
+  const frames = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return onlyActive ? frames.filter((f) => f.active) : frames;
 }
 
 export async function createFrame(eventId, data) {
