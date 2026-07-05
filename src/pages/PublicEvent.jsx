@@ -55,6 +55,14 @@ export default function PublicEvent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
+  // Com uma moldura só, não faz sentido pedir pra escolher — aplica direto.
+  useEffect(() => {
+    if (step === STEP.FRAME && sourcePhoto && frames.length === 1 && !selectedFrame && !composing) {
+      selectFrame(frames[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, sourcePhoto, frames]);
+
   useEffect(() => {
     return () => stopCamera();
   }, []);
@@ -483,20 +491,24 @@ export default function PublicEvent() {
             <p className="text-sm text-red-600 text-center mt-3">{composeError}</p>
           )}
 
-          <p className="text-sm text-ink/60 mt-5 mb-2 text-center">Escolha uma moldura</p>
-          <div className="grid grid-cols-3 gap-3">
-            {frames.map((frame) => (
-              <button
-                key={frame.id}
-                onClick={() => selectFrame(frame)}
-                className={`bg-white border rounded-lg p-2 aspect-square flex items-center justify-center ${
-                  selectedFrame?.id === frame.id ? "border-clay ring-2 ring-clay/30" : "border-line"
-                }`}
-              >
-                <img src={frame.imageUrl} className="max-h-full max-w-full object-contain" />
-              </button>
-            ))}
-          </div>
+          {frames.length > 1 && (
+            <>
+              <p className="text-sm text-ink/60 mt-5 mb-2 text-center">Escolha uma moldura</p>
+              <div className="grid grid-cols-3 gap-3">
+                {frames.map((frame) => (
+                  <button
+                    key={frame.id}
+                    onClick={() => selectFrame(frame)}
+                    className={`bg-white border rounded-lg p-2 aspect-square flex items-center justify-center ${
+                      selectedFrame?.id === frame.id ? "border-clay ring-2 ring-clay/30" : "border-line"
+                    }`}
+                  >
+                    <img src={frame.imageUrl} className="max-h-full max-w-full object-contain" />
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
           {composedImage && !composing && (
             <div className="flex gap-3 mt-6">
@@ -535,6 +547,32 @@ export default function PublicEvent() {
           </button>
         </div>
       )}
+
+      <div className="w-full mt-auto pt-12 pb-2 text-center">
+        <p className="text-xs text-ink/40">
+          📸 Gostou dessa experiência? Quer uma moldura assim no seu evento?
+        </p>
+        <p className="text-xs text-ink/40 mt-0.5">
+          Fale com a{" "}
+          <a
+            href="https://instagram.com/leliastudioo"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-clay font-medium hover:underline"
+          >
+            Lelia Studio
+          </a>{" "}
+          ·{" "}
+          <a
+            href="https://wa.me/5521973988299"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-clay font-medium hover:underline"
+          >
+            WhatsApp
+          </a>
+        </p>
+      </div>
     </div>
   );
 }
