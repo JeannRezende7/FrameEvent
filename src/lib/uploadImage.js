@@ -1,18 +1,67 @@
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
-import { storage } from "./firebase.js";
-import { v4 as uuid } from "uuid";
+// Comprime a imagem no navegador e devolve um data URL (base64) para salvar
+// direto num campo do Firestore — evita depender do Firebase Storage (que no
+// plano gratuito Spark não pode ser ativado em projetos novos).
+// Documentos do Firestore têm limite de 1 MiB; MAX_BYTES deixa margem para
+// os outros campos do documento.
+const MAX_BYTES = 700 * 1024;
 
-export async function uploadImage(file, path) {
-  const ext = file.name?.split(".").pop() || "png";
-  const fileRef = ref(storage, `${path}/${uuid()}.${ext}`);
-  await uploadBytes(fileRef, file);
-  return getDownloadURL(fileRef);
+function blobToImage(blob) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
 }
 
-export async function uploadDataUrl(dataUrl, path) {
-  const res = await fetch(dataUrl);
-  const blob = await res.blob();
-  const fileRef = ref(storage, `${path}/${uuid()}.png`);
-  await uploadBytes(fileRef, blob);
-  return getDownloadURL(fileRef);
+function drawToCanvas(img, width, height) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+  return canvas;
+}
+
+async function compress(blob, { transparent = false, maxDimension = 1600 } = {}) {
+  const img = await blobToImage(blob);
+  const scale = Math.min(1, maxDimension / Math.max(img.naturalWidth, img.naturalHeight));
+  let width = Math.round(img.naturalWidth * scale);
+  let height = Math.round(img.naturalHeight * scale);
+  const mimeType = transparent ? "image/png" : "image/jpeg";
+
+  let canvas = drawToCanvas(img, width, height);
+  let quality = 0.85;
+  let dataUrl = canvas.toDataURL(mimeType, quality);
+
+  // JPEG: reduz qualidade primeiro (PNG ignora o parâmetro de qualidade).
+  while (dataUrl.length > MAX_BYTES && quality > 0.4) {
+    quality -= 0.15;
+    dataUrl = canvas.toDataURL(mimeType, quality);
+  }
+
+  // Ainda grande (comum em PNG): reduz a resolução até caber.
+  while (dataUrl.length > MAX_BYTES && width > 400) {
+    width = Math.round(width * 0.75);
+    height = Math.round(height * 0.75);
+    canvas = drawToCanvas(img, width, height);
+    dataUrl = canvas.toDataURL(mimeType, quality);
+  }
+
+  if (dataUrl.length > MAX_BYTES) {
+    throw new Error("Imagem muito grande mesmo após compressão. Tente um arquivo menor.");
+  }
+  return dataUrl;
+}
+
+export async function uploadImage(file, { transparent = false } = {}) {
+  return compress(file, { transparent });
+}
+
+export async function uploadDataUrl(dataUrl, { transparent = false } = {}) {
+  const blob = await (await fetch(dataUrl)).blob();
+  return compress(blob, { transparent });
 }

@@ -5,7 +5,7 @@ tirem fotos com moldura via QR Code.
 
 ## Stack
 
-React + Vite + Tailwind + Firebase (Firestore + Storage).
+React + Vite + Tailwind + Firebase (Firestore).
 
 ## O que foi simplificado em relação ao briefing original
 
@@ -17,18 +17,24 @@ React + Vite + Tailwind + Firebase (Firestore + Storage).
   rotação) com prévia ao vivo. Você ajusta uma única vez por moldura e todas
   as fotos geradas usam essa posição — o resultado final é o mesmo do
   briefing, só a forma de ajustar é mais simples de implementar e manter.
+- **Sem Firebase Storage**: imagens (banner, logo, molduras, fotos geradas)
+  são comprimidas no navegador e salvas como base64 direto nos documentos do
+  Firestore, em vez de subidas para o Storage. Isso evita depender do plano
+  pago (Blaze), que o Google passou a exigir para ativar Storage em projetos
+  novos. Limite prático: cada imagem precisa caber em ~700 KB depois de
+  comprimida (o código reduz qualidade/resolução automaticamente até caber).
 
 ## Setup
 
 1. Crie um projeto no [Firebase Console](https://console.firebase.google.com/).
-2. Ative **Firestore Database** e **Storage** (modo produção).
+2. Ative o **Firestore Database** (modo produção).
 3. Copie `.env.example` para `.env` e preencha com as credenciais do seu
    projeto Firebase (Configurações do projeto → Seus apps → SDK Web).
-4. Publique as regras de `firestore.rules` e `storage.rules` no console
-   (ou via Firebase CLI: `firebase deploy --only firestore:rules,storage`).
-   As regras estão abertas para leitura/escrita porque o painel usa login
-   fixo em vez de Firebase Auth — para uso público prolongado, considere
-   restringir a escrita por IP ou mover para Cloud Functions.
+4. Publique as regras de `firestore.rules` no console (ou via Firebase CLI:
+   `firebase deploy --only firestore:rules`). As regras estão abertas para
+   leitura/escrita porque o painel usa login fixo em vez de Firebase Auth —
+   para uso público prolongado, considere restringir a escrita por IP ou
+   mover para Cloud Functions.
 5. Instale as dependências e rode:
 
 ```bash

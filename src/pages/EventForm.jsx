@@ -42,8 +42,8 @@ export default function EventForm() {
     try {
       let bannerUrl = form.bannerUrl;
       let logoUrl = form.logoUrl;
-      if (bannerFile) bannerUrl = await uploadImage(bannerFile, "eventos/banners");
-      if (logoFile) logoUrl = await uploadImage(logoFile, "eventos/logos");
+      if (bannerFile) bannerUrl = await uploadImage(bannerFile);
+      if (logoFile) logoUrl = await uploadImage(logoFile, { transparent: true });
 
       const payload = { ...form, bannerUrl, logoUrl };
 

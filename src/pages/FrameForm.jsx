@@ -36,7 +36,7 @@ export default function FrameForm() {
     setSaving(true);
     try {
       let url = imageUrl;
-      if (imageFile) url = await uploadImage(imageFile, `eventos/${eventId}/molduras`);
+      if (imageFile) url = await uploadImage(imageFile, { transparent: true });
 
       if (isEditing) {
         await updateFrame(eventId, frameId, { name, active, imageUrl: url });

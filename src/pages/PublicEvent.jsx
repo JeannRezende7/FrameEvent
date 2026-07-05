@@ -63,7 +63,7 @@ export default function PublicEvent() {
 
   async function persistPhoto() {
     if (!composedImage || !selectedFrame) return null;
-    const url = await uploadDataUrl(composedImage, `eventos/${event.id}/fotos`);
+    const url = await uploadDataUrl(composedImage);
     await createPhoto(event.id, { imageUrl: url, frameId: selectedFrame.id });
     return url;
   }
